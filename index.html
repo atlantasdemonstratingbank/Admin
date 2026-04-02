@@ -10,6 +10,20 @@
 <meta name="apple-mobile-web-app-title" content="Atl Admin">
 <link rel="apple-touch-icon" href="https://i.imgur.com/iN8T10D.jpeg">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<!-- OneSignal SDK — must load before any other scripts -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(function(OneSignal) {
+    OneSignal.init({
+      appId: 'fe04d49e-654c-4b09-b2cf-a7cfa501665d',
+      serviceWorkerParam: { scope: '/' },
+      serviceWorkerPath: 'sw.js',
+      notifyButton: { enable: false },
+      promptOptions: { slidedown: { prompts: [] } }
+    });
+  });
+</script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>

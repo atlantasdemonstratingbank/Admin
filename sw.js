@@ -1,5 +1,5 @@
 // sw.js — Atlantas Admin Service Worker v3 (Real-Time + iOS Push)
-var CACHE = 'atl-admin-v3';
+var CACHE = 'atl-admin-v4';
 var ASSETS = ['/', 'index.html', 'admin.js', 'config.js', 'pwa.js', 'manifest.json'];
 
 self.addEventListener('install', function(e) {
@@ -94,7 +94,20 @@ self.addEventListener('sync', function(e) {
   if (e.tag === 'atl-check-alerts') {
     e.waitUntil(
       self.clients.matchAll({ includeUncontrolled: true }).then(function(cls) {
-        cls.forEach(function(c) { c.postMessage({ type: 'CHECK_ALERTS' }); });
+        if (cls.length > 0) {
+          // App is open — relay to tabs
+          cls.forEach(function(c) { c.postMessage({ type: 'CHECK_ALERTS' }); });
+        } else {
+          // App is closed — show a notification directly
+          return self.registration.showNotification('Atlantas Admin', {
+            body: 'You have pending items that need attention.',
+            icon: 'https://i.imgur.com/iN8T10D.jpeg',
+            badge: 'https://i.imgur.com/iN8T10D.jpeg',
+            tag: 'atl-sync-alert',
+            requireInteraction: true,
+            data: { url: '/' }
+          });
+        }
       })
     );
   }
@@ -105,7 +118,18 @@ self.addEventListener('periodicsync', function(e) {
   if (e.tag === 'atl-realtime-check') {
     e.waitUntil(
       self.clients.matchAll({ includeUncontrolled: true }).then(function(cls) {
-        cls.forEach(function(c) { c.postMessage({ type: 'CHECK_ALERTS' }); });
+        if (cls.length > 0) {
+          cls.forEach(function(c) { c.postMessage({ type: 'CHECK_ALERTS' }); });
+        } else {
+          return self.registration.showNotification('Atlantas Admin', {
+            body: 'Check your admin panel for new activity.',
+            icon: 'https://i.imgur.com/iN8T10D.jpeg',
+            badge: 'https://i.imgur.com/iN8T10D.jpeg',
+            tag: 'atl-periodic-alert',
+            requireInteraction: true,
+            data: { url: '/' }
+          });
+        }
       })
     );
   }

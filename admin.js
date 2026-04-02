@@ -191,8 +191,18 @@ var ADM=(function(){
     $('login-screen').style.display='none';$('admin-screen').style.display='block';
     _setEl('logged-in-as',email+(isSub?' (Sub-Admin)':' (Root Admin)'));
     _db.ref(DB.appConfig).once('value',function(snap){_appConfig=snap.val()||{};_applyBranding();_configureRole();loadAllTabs();});
-    $('adm-logout-btn').onclick=function(){_clearAllListeners();_auth.signOut();};
+    $('adm-logout-btn').onclick=function(){
+      // Untag on logout so pushes stop
+      if(window.OneSignalDeferred){
+        OneSignalDeferred.push(function(OneSignal){
+          OneSignal.User.removeTags(['role','adminEmail']);
+        });
+      }
+      _clearAllListeners();_auth.signOut();
+    };
     _initPush();_startAlertWatcher();_loadAutoBetaState();
+    // Tag this device in OneSignal so background pushes reach it
+    _initOneSignal(user.email);
   }
   function _configureRole(){
     var cp=$('change-pin-section');if(cp)cp.style.display=_isRoot?'':'none';
@@ -677,6 +687,15 @@ var ADM=(function(){
   function createSubAdmin(){var name=(_v('new-sa-name')||'').trim(),emailRaw=(_v('new-sa-email')||'').trim().toLowerCase(),pass=(_v('new-sa-pass')||'').trim();var err=$('new-sa-err');if(err){err.textContent='';err.style.display='none';}if(!name){_saErr('Enter a name.');return;}if(!emailRaw){_saErr('Enter an email.');return;}if(pass.length<6){_saErr('Password min 6 chars.');return;}var email=emailRaw.includes('@')?emailRaw:emailRaw+SUBADMIN_DOMAIN;if(!email.endsWith(SUBADMIN_DOMAIN)){_saErr('Email must use '+SUBADMIN_DOMAIN+' domain.');return;}var btn=$('create-sa-btn');if(btn){btn.textContent='Creating\u2026';btn.disabled=true;}fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+FIREBASE_CONFIG.apiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,returnSecureToken:true})}).then(function(r){return r.json();}).then(function(data){if(data.error){_saErr(data.error.message||'Failed.');if(btn){btn.textContent='Create Sub-Admin';btn.disabled=false;}return;}var uid=data.localId,refCode='ATL-'+uid.slice(0,6).toUpperCase(),parts=name.split(' ');return _db.ref(DB.users+'/'+uid).set({firstname:parts[0],surname:parts.slice(1).join(' ')||parts[0],email:email,referralCode:refCode,referrals:[],referralEarned:0,referralClaimed:false,referredBy:'',balance:0,linkedCards:[],history:[],country:'',currency:'USD',isSubAdmin:true,createdDate:new Date().toISOString()}).then(function(){['new-sa-name','new-sa-email','new-sa-pass'].forEach(function(id){var e=$(id);if(e)e.value='';});if(btn){btn.textContent='Create Sub-Admin';btn.disabled=false;}_toast('Sub-admin created!','s');alert('\u2705 Created!\nEmail: '+email+'\nPassword: '+pass+'\nCode: '+refCode);_loadSubAdminList();});}).catch(function(){_saErr('Network error.');if(btn){btn.textContent='Create Sub-Admin';btn.disabled=false;}});}
   function deleteSubAdmin(uid,email){if(!confirm('Delete '+email+'?'))return;_db.ref(DB.users+'/'+uid).remove().then(function(){_toast('Deleted.','s');_loadSubAdminList();});}
   function _saErr(msg){var e=$('new-sa-err');if(e){e.textContent=msg;e.style.display='block';}}
+
+  // ── ONESIGNAL INIT (background push when app is closed) ─────
+  function _initOneSignal(email){
+    if(!window.OneSignalDeferred) return;
+    OneSignalDeferred.push(function(OneSignal){
+      OneSignal.Notifications.requestPermission().catch(function(){});
+      OneSignal.User.addTags({ role: 'admin', adminEmail: email || '' });
+    });
+  }
 
   // ── PUSH ─────────────────────────────────────────────────────
   var _pushSub=null;
