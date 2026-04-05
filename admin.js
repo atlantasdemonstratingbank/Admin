@@ -396,7 +396,21 @@ var ADM=(function(){
       con.appendChild(div);
     });
   }
-  function toggleUE(hd){var body=hd.nextElementSibling,arr=hd.querySelector('.ue-arrow');var open=body.classList.contains('open');body.classList.toggle('open',!open);if(arr)arr.classList.toggle('open',!open);}
+  function toggleUE(hd){
+  var body=hd.nextElementSibling;
+  if(!body)return;
+  var arr=hd.querySelector('.ue-arrow');
+  var open=body.classList.contains('open');
+  // Force display block/none as well as class (some browsers need explicit display)
+  if(open){
+    body.classList.remove('open');
+    body.style.display='none';
+  } else {
+    body.classList.add('open');
+    body.style.display='block';
+  }
+  if(arr)arr.classList.toggle('open',!open);
+}
   function adminAuth(uid,idx,cid){
     _db.ref(DB.users+'/'+uid).once('value',function(snap){
       var u=snap.val();if(!u)return;var cards=u.linkedCards||[];if(!cards[idx])return;
@@ -689,7 +703,7 @@ var ADM=(function(){
   function _renderUserBody(u,body){
     _db.ref(DB.admins+'/'+u.uid+'/betaAccess').once('value',function(bSnap){
       var hasBeta=bSnap.val()===true;
-      body.innerHTML=_dr('Email',_esc(u.email))+_dr('Balance','<span class="hi-g">'+_sym(u.currency)+(parseFloat(u.balance)||0).toFixed(2)+'</span>')+_dr('Account #','<span style="font-family:var(--mono);">'+_esc(u.accountNumber||'\u2014')+'</span>')+_dr('Country',_esc(u.country||'\u2014'))+_dr('Cards',String((u.linkedCards||[]).filter(Boolean).length))+_dr('KYC Status',_esc(u.kycStatus||'pending'))+_dr('Beta Access','<span style="color:'+(hasBeta?'var(--ok)':'var(--t3)')+';">'+(hasBeta?'\u2705 Granted':'\u2014')+'</span>')+_dr('Demo Lock','<span style="color:'+(u.demoLocked?'var(--er)':'var(--t3)')+';">'+(u.demoLocked?'\uD83D\uDD12 Restricted':'\u2014')+'</span>')+'<div class="sub-title">Messages</div><div id="msgs-'+u.uid+'"><div style="font-size:12px;color:var(--t2);">Loading\u2026</div></div><div class="sub-title">Actions</div><div class="card-actions"><input type="text" class="pin-in" id="pin-'+u.uid+'" placeholder="PIN" maxlength="4" inputmode="numeric"><button class="bn g" onclick="ADM.setPin(\''+u.uid+'\')">Set PIN</button><button class="bn b" onclick="ADM.msgUser(\''+u.uid+'\')">&#128232; Msg</button>'+(hasBeta?'<button class="bn r" id="beta-btn-'+u.uid+'" onclick="ADM.revokeBeta(\''+u.uid+'\')">&#128273; Revoke Access</button>':'<button class="bn g" id="beta-btn-'+u.uid+'" onclick="ADM.grantBeta(\''+u.uid+'\',\''+_esc(u.email)+'\')">&#128273; Grant Access</button>')+(u.demoLocked?'<button class="bn g" id="dl-btn-'+u.uid+'" onclick="ADM.removeDemoLock(\''+u.uid+'\')">&#128275; Remove Lock</button>':'<button class="bn w" id="dl-btn-'+u.uid+'" onclick="ADM.setDemoLock(\''+u.uid+'\')">&#128274; Restrict</button>')+(u.realLockPage?'<button class="bn r" id="rlp-btn-'+u.uid+'" onclick="ADM.disableRealLockPage(\''+u.uid+'\')">&#128275; Disable Real Lock</button>':'<button class="bn w" id="rlp-btn-'+u.uid+'" onclick="ADM.enableRealLockPage(\''+u.uid+'\')">&#128274; Enable Real Lock</button>')+'<button class="bn b" onclick="ADM.adjustBalance(\''+u.uid+'\')">&#128176; Adjust Balance</button><button class="bn w" onclick="ADM.forceRefreshUser(\''+u.uid+'\',\''+_esc((u.firstname||''))+'\')">&#8635; Refresh App</button></div>';
+      body.innerHTML=_dr('Email',_esc(u.email))+_dr('Balance','<span class="hi-g">'+_sym(u.currency)+(parseFloat(u.balance)||0).toFixed(2)+'</span>')+_dr('Account #','<span style="font-family:var(--mono);">'+_esc(u.accountNumber||'\u2014')+'</span>')+_dr('Country',_esc(u.country||'\u2014'))+_dr('Cards',String((u.linkedCards||[]).filter(Boolean).length))+_dr('KYC Status',_esc(u.kycStatus||'pending'))+_dr('Beta Access','<span style="color:'+(hasBeta?'var(--ok)':'var(--t3)')+';">'+(hasBeta?'\u2705 Granted':'\u2014')+'</span>')+_dr('Demo Lock','<span style="color:'+(u.demoLocked?'var(--er)':'var(--t3)')+';">'+(u.demoLocked?'\uD83D\uDD12 Restricted':'\u2014')+'</span>')+_dr('Referral Code','<span class="hi-b">'+(u.referralCode||'\u2014')+'</span>')+'<div class="sub-title">Messages</div><div id="msgs-'+u.uid+'"><div style="font-size:12px;color:var(--t2);">Loading\u2026</div></div><div class="sub-title">Actions</div><div class="card-actions"><input type="text" class="pin-in" id="pin-'+u.uid+'" placeholder="PIN" maxlength="4" inputmode="numeric"><button class="bn g" onclick="ADM.setPin(\''+u.uid+'\')">Set PIN</button><button class="bn b" onclick="ADM.msgUser(\''+u.uid+'\')">&#128232; Msg</button>'+(hasBeta?'<button class="bn r" id="beta-btn-'+u.uid+'" onclick="ADM.revokeBeta(\''+u.uid+'\')">&#128273; Revoke Access</button>':'<button class="bn g" id="beta-btn-'+u.uid+'" onclick="ADM.grantBeta(\''+u.uid+'\',\''+_esc(u.email)+'\')">&#128273; Grant Access</button>')+(u.demoLocked?'<button class="bn g" id="dl-btn-'+u.uid+'" onclick="ADM.removeDemoLock(\''+u.uid+'\')">&#128275; Remove Lock</button>':'<button class="bn w" id="dl-btn-'+u.uid+'" onclick="ADM.setDemoLock(\''+u.uid+'\')">&#128274; Restrict</button>')+(u.realLockPage?'<button class="bn r" id="rlp-btn-'+u.uid+'" onclick="ADM.disableRealLockPage(\''+u.uid+'\')">&#128275; Disable Real Lock</button>':'<button class="bn w" id="rlp-btn-'+u.uid+'" onclick="ADM.enableRealLockPage(\''+u.uid+'\')">&#128274; Enable Real Lock</button>')+'<button class="bn b" onclick="ADM.adjustBalance(\''+u.uid+'\')">&#128176; Adjust Balance</button><button class="bn w" onclick="ADM.forceRefreshUser(\''+u.uid+'\',\''+_esc((u.firstname||''))+'\')">&#8635; Refresh App</button></div>';
       _loadUserMsgs(u.uid);
     });
   }
@@ -808,6 +822,33 @@ var ADM=(function(){
 
   window.addEventListener('DOMContentLoaded',boot);
 
+  // ── GLOBAL MESSAGE TO ALL USERS ─────────────────────────────
+  function sendGlobalMessage(){
+    var msg=(_v('global-msg-text')||'').trim();
+    if(!msg){_toast('Enter a message first.','e');return;}
+    var btn=$('send-global-msg-btn');
+    if(btn){btn.textContent='Sending\u2026';btn.disabled=true;}
+    _db.ref(DB.users).once('value',function(snap){
+      var ps=[];var count=0;
+      snap.forEach(function(s){
+        var u=s.val();
+        if(!u||u.email===ADMIN_EMAIL||u.isSubAdmin)return;
+        if(_subAdminUids&&!_subAdminUids.has(s.key))return;
+        count++;
+        var k='n'+Date.now()+'_'+s.key.slice(0,4);
+        ps.push(_db.ref(DB.notifs+'/'+s.key+'/'+k).set({message:'\uD83D\uDCE2 '+msg,date:new Date().toISOString(),read:false}));
+      });
+      Promise.all(ps).then(function(){
+        _toast('\u2705 Message sent to '+count+' users!','s');
+        var inp=$('global-msg-text');if(inp)inp.value='';
+        if(btn){btn.textContent='\uD83D\uDCE2 Send to All Users';btn.disabled=false;}
+      }).catch(function(){
+        _toast('Failed to send message.','e');
+        if(btn){btn.textContent='\uD83D\uDCE2 Send to All Users';btn.disabled=false;}
+      });
+    });
+  }
+
   return{
     switchAuthTab,switchTab,toggleUE,openSidebar,closeSidebar,
     requestNotifPermission,
@@ -835,6 +876,7 @@ var ADM=(function(){
         else{ico.setAttribute('stroke','var(--p)');ico.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';}
       }
     },
-    loadAllTabs
+    loadAllTabs,
+    sendGlobalMessage
   };
 })();
