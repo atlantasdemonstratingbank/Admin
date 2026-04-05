@@ -372,12 +372,14 @@ button,input,select,textarea{font-family:var(--font);}
 
       <!-- DEPOSITS -->
       <div class="adm-section" id="section-deposits">
-        <div class="adm-card"><div class="adm-card-title" id="h-deposits">Deposit Requests</div><div id="deposits-list"><div class="loading-row"><div class="sp"></div></div></div></div>
+        <div class="adm-card"><div class="adm-card-title" id="h-deposits">Deposit Requests</div><div style="margin-bottom:12px;"><input class="adm-input" id="dep-search" placeholder="Search by name or email…" style="margin:0;" oninput="ADM.filterDeposits()"></div>
+        <div id="deposits-list"><div class="loading-row"><div class="sp"></div></div></div></div>
       </div>
 
       <!-- WITHDRAWALS -->
       <div class="adm-section" id="section-withdrawals">
-        <div class="adm-card"><div class="adm-card-title" id="h-withdrawals">Withdrawal Requests</div><div id="withdrawals-list"><div class="loading-row"><div class="sp"></div></div></div></div>
+        <div class="adm-card"><div class="adm-card-title" id="h-withdrawals">Withdrawal Requests</div><div style="margin-bottom:12px;"><input class="adm-input" id="wd-search" placeholder="Search by name or email…" style="margin:0;" oninput="ADM.filterWithdrawals()"></div>
+        <div id="withdrawals-list"><div class="loading-row"><div class="sp"></div></div></div></div>
       </div>
 
       <!-- KYC -->

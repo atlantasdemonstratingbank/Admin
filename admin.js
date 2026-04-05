@@ -488,6 +488,19 @@ var ADM=(function(){
   function rejectInst(key,uid){var reason=prompt('Reason for rejection:');if(!reason)return;_db.ref(DB.instSubs+'/'+key).update({status:'rejected',rejectedDate:new Date().toISOString(),rejectionReason:reason}).then(function(){_notify(uid,'\u274C Your institution submission was rejected. Reason: '+reason);_toast('Rejected.','e');});}
 
   // ── DEPOSITS (realtime) ──────────────────────────────────────
+  var _allDeposits=[];
+  function filterDeposits(){var q=(_v('dep-search')||'').toLowerCase();var f=q?_allDeposits.filter(function(r){return((r.name||'')+(r.email||'')).toLowerCase().includes(q);}):_allDeposits.slice();_renderDepList(f);}
+  function _renderDepList(all){
+    var list=$('deposits-list');if(!list)return;var pending=0;list.innerHTML='';
+    if(!all.length){list.innerHTML='<div class="acc-empty">No deposit requests</div>';return;}
+    all.forEach(function(req){
+      var isPending=req.status==='pending';if(isPending)pending++;var rs=_sym(req.currency);
+      var div=document.createElement('div');div.className='ue';
+      div.innerHTML='<div class="ue-hd" onclick="ADM.toggleUE(this)"><div class="ue-ava" style="background:'+(isPending?'var(--warn)':'var(--ok)')+';">'+_esc((req.name||'?').charAt(0).toUpperCase())+'</div><div class="ue-info"><div class="ue-name">'+_esc(req.name||'\u2014')+'</div><div class="ue-meta">'+rs+parseFloat(req.amount||0).toFixed(2)+' \xb7 '+_fmtDate(req.date)+'</div></div><span class="sbadge '+(isPending?'pending':'approved')+'" style="margin:0 8px 0 0;">'+(isPending?'PENDING':'APPROVED')+'</span><span class="ue-arrow">&#9660;</span></div><div class="ue-body">'+_dr('Name',_esc(req.name))+_dr('Email',_esc(req.email))+_dr('Amount','<span class="hi-g">'+rs+parseFloat(req.amount||0).toFixed(2)+'</span>')+_dr('Account',_esc(req.accountNumber))+_dr('Reference',_esc(req.reference||'\u2014'))+_dr('Source',_esc(req.paymentSource||'\u2014'))+_dr('Date',_fmtDate(req.date))+(isPending?'<div class="card-actions"><button class="bn g" onclick="ADM.approveDeposit(\''+_esc(req._key)+'\')">&#10003; Approve</button><button class="bn r" onclick="ADM.rejectDeposit(\''+_esc(req._key)+'\')">&#10007; Reject</button></div>':'')+' </div>';
+      list.appendChild(div);
+    });
+    _setBadge('cnt-deposits',pending);
+  }
   function loadDepositsTab(){
     var list=$('deposits-list');if(!list)return;list.innerHTML='<div class="loading-row"><div class="sp"></div></div>';
     _getSubAdminUids(function(uids){
@@ -495,15 +508,7 @@ var ADM=(function(){
         if(!snap.exists()){list.innerHTML='<div class="acc-empty">No deposit requests yet</div>';return;}
         var all=[];snap.forEach(function(s){var r=s.val();if(r&&(!uids||uids.has(r.uid)))all.push(Object.assign({},r,{_key:s.key}));});
         all.sort(function(a,b){if(a.status==='pending'&&b.status!=='pending')return -1;if(b.status==='pending'&&a.status!=='pending')return 1;return new Date(b.date)-new Date(a.date);});
-        var pending=0;list.innerHTML='';
-        if(!all.length){list.innerHTML='<div class="acc-empty">No deposit requests</div>';return;}
-        all.forEach(function(req){
-          var isPending=req.status==='pending';if(isPending)pending++;var rs=_sym(req.currency);
-          var div=document.createElement('div');div.className='ue';
-          div.innerHTML='<div class="ue-hd" onclick="ADM.toggleUE(this)"><div class="ue-ava" style="background:'+(isPending?'var(--warn)':'var(--ok)')+';">'+_esc((req.name||'?').charAt(0).toUpperCase())+'</div><div class="ue-info"><div class="ue-name">'+_esc(req.name||'\u2014')+'</div><div class="ue-meta">'+rs+parseFloat(req.amount||0).toFixed(2)+' \xb7 '+_fmtDate(req.date)+'</div></div><span class="sbadge '+(isPending?'pending':'approved')+'" style="margin:0 8px 0 0;">'+(isPending?'PENDING':'APPROVED')+'</span><span class="ue-arrow">&#9660;</span></div><div class="ue-body">'+_dr('Name',_esc(req.name))+_dr('Email',_esc(req.email))+_dr('Amount','<span class="hi-g">'+rs+parseFloat(req.amount||0).toFixed(2)+'</span>')+_dr('Account',_esc(req.accountNumber))+_dr('Reference',_esc(req.reference||'\u2014'))+_dr('Source',_esc(req.paymentSource||'\u2014'))+_dr('Date',_fmtDate(req.date))+(isPending?'<div class="card-actions"><button class="bn g" onclick="ADM.approveDeposit(\''+_esc(req._key)+'\')">&#10003; Approve</button><button class="bn r" onclick="ADM.rejectDeposit(\''+_esc(req._key)+'\')">&#10007; Reject</button></div>':'')+' </div>';
-          list.appendChild(div);
-        });
-        _setBadge('cnt-deposits',pending);
+        _allDeposits=all;_renderDepList(all);
       });
     });
   }
@@ -522,6 +527,19 @@ var ADM=(function(){
   function rejectDeposit(key){var reason=prompt('Reason for rejection:');if(reason===null)return;_db.ref(DB.topups+'/'+key).update({status:'rejected',rejectReason:reason,processedDate:new Date().toISOString()}).then(function(){_toast('Deposit rejected.','e');});}
 
   // ── WITHDRAWALS (realtime) ───────────────────────────────────
+  var _allWithdrawals=[];
+  function filterWithdrawals(){var q=(_v('wd-search')||'').toLowerCase();var f=q?_allWithdrawals.filter(function(r){return((r.name||'')+(r.email||'')).toLowerCase().includes(q);}):_allWithdrawals.slice();_renderWdList(f);}
+  function _renderWdList(all){
+    var list=$('withdrawals-list');if(!list)return;var pending=0;list.innerHTML='';
+    if(!all.length){list.innerHTML='<div class="acc-empty">No withdrawal requests</div>';return;}
+    all.forEach(function(req){
+      var isPending=req.status==='pending';if(isPending)pending++;var rs=_sym(req.currency);
+      var div=document.createElement('div');div.className='ue';
+      div.innerHTML='<div class="ue-hd" onclick="ADM.toggleUE(this)"><div class="ue-ava" style="background:'+(isPending?'var(--warn)':'var(--p)')+';">'+_esc((req.name||'?').charAt(0).toUpperCase())+'</div><div class="ue-info"><div class="ue-name">'+_esc(req.name||'\u2014')+'</div><div class="ue-meta">-'+rs+parseFloat(req.amount||0).toFixed(2)+' \xb7 '+_fmtDate(req.date)+'</div></div><span class="sbadge '+(isPending?'pending':'sent')+'" style="margin:0 8px 0 0;">'+(isPending?'PENDING':'SENT')+'</span><span class="ue-arrow">&#9660;</span></div><div class="ue-body">'+_dr('Name',_esc(req.name))+_dr('Email',_esc(req.email))+_dr('Amount','<span class="hi-r">-'+rs+parseFloat(req.amount||0).toFixed(2)+'</span>')+_dr('Destination',_esc(req.destinationAccount||'\u2014'))+_dr('Bank',_esc(req.bankName||'\u2014'))+_dr('Account',_esc(req.accountNumber))+_dr('Date',_fmtDate(req.date))+(isPending?'<div class="card-actions"><button class="bn g" onclick="ADM.markSent(\''+_esc(req._key)+'\')">&#10003; Mark Sent</button><button class="bn r" onclick="ADM.rejectWithdrawal(\''+_esc(req._key)+'\')">&#10007; Reject</button></div>':'')+' </div>';
+      list.appendChild(div);
+    });
+    _setBadge('cnt-wd',pending);
+  }
   function loadWithdrawalsTab(){
     var list=$('withdrawals-list');if(!list)return;list.innerHTML='<div class="loading-row"><div class="sp"></div></div>';
     _getSubAdminUids(function(uids){
@@ -529,15 +547,7 @@ var ADM=(function(){
         if(!snap.exists()){list.innerHTML='<div class="acc-empty">No withdrawal requests yet</div>';return;}
         var all=[];snap.forEach(function(s){var r=s.val();if(r&&(!uids||uids.has(r.uid)))all.push(Object.assign({},r,{_key:s.key}));});
         all.sort(function(a,b){if(a.status==='pending'&&b.status!=='pending')return -1;if(b.status==='pending'&&a.status!=='pending')return 1;return new Date(b.date)-new Date(a.date);});
-        var pending=0;list.innerHTML='';
-        if(!all.length){list.innerHTML='<div class="acc-empty">No withdrawal requests</div>';return;}
-        all.forEach(function(req){
-          var isPending=req.status==='pending';if(isPending)pending++;var rs=_sym(req.currency);
-          var div=document.createElement('div');div.className='ue';
-          div.innerHTML='<div class="ue-hd" onclick="ADM.toggleUE(this)"><div class="ue-ava" style="background:'+(isPending?'var(--warn)':'var(--p)')+';">'+_esc((req.name||'?').charAt(0).toUpperCase())+'</div><div class="ue-info"><div class="ue-name">'+_esc(req.name||'\u2014')+'</div><div class="ue-meta">-'+rs+parseFloat(req.amount||0).toFixed(2)+' \xb7 '+_fmtDate(req.date)+'</div></div><span class="sbadge '+(isPending?'pending':'sent')+'" style="margin:0 8px 0 0;">'+(isPending?'PENDING':'SENT')+'</span><span class="ue-arrow">&#9660;</span></div><div class="ue-body">'+_dr('Name',_esc(req.name))+_dr('Email',_esc(req.email))+_dr('Amount','<span class="hi-r">-'+rs+parseFloat(req.amount||0).toFixed(2)+'</span>')+_dr('Destination',_esc(req.destinationAccount||'\u2014'))+_dr('Bank',_esc(req.bankName||'\u2014'))+_dr('Account',_esc(req.accountNumber))+_dr('Date',_fmtDate(req.date))+(isPending?'<div class="card-actions"><button class="bn g" onclick="ADM.markSent(\''+_esc(req._key)+'\')">&#10003; Mark Sent</button><button class="bn r" onclick="ADM.rejectWithdrawal(\''+_esc(req._key)+'\')">&#10007; Reject</button></div>':'')+' </div>';
-          list.appendChild(div);
-        });
-        _setBadge('cnt-wd',pending);
+        _allWithdrawals=all;_renderWdList(all);
       });
     });
   }
@@ -715,7 +725,21 @@ var ADM=(function(){
   function removeDemoLock(uid){_db.ref(DB.users+'/'+uid).update({demoLocked:false}).then(function(){_notify(uid,'\uD83D\uDD13 Your account access has been restored. Welcome back!');_toast('Lock removed.','s');});}
   function enableRealLockPage(uid){_db.ref(DB.users+'/'+uid).update({realLockPage:true}).then(function(){_toast('Real lock page enabled for user.','s');});}
   function disableRealLockPage(uid){_db.ref(DB.users+'/'+uid).update({realLockPage:false}).then(function(){_toast('Real lock page disabled for user.','s');});}
-  function adjustBalance(uid){var amt=prompt('Add or subtract (e.g. 500 or -200):');if(amt===null)return;var n=parseFloat(amt);if(isNaN(n)){alert('Invalid amount.');return;}_db.ref(DB.users+'/'+uid+'/balance').once('value',function(snap){var cur=parseFloat(snap.val())||0;var newBal=Math.max(0,cur+n);_db.ref(DB.users+'/'+uid+'/balance').set(newBal).then(function(){if(n>0)_notify(uid,'Your balance has been updated. New balance: '+newBal.toFixed(2));_toast('Balance updated to '+newBal.toFixed(2),'s');});});}
+  function adjustBalance(uid){
+    var amt=prompt('Add or subtract (e.g. 500 or -200):');if(amt===null)return;
+    var n=parseFloat(amt);if(isNaN(n)){alert('Invalid amount.');return;}
+    var desc=prompt('Description (shown to user):',n>0?'Admin credit':'Admin debit');if(desc===null)return;
+    _db.ref(DB.users+'/'+uid).once('value',function(snap){
+      var u=snap.val();if(!u)return;
+      var cur=parseFloat(u.balance)||0,newBal=Math.max(0,cur+n);
+      var hist=u.history||[];if(!Array.isArray(hist))hist=Object.values(hist);
+      hist.push({type:n>0?'credit':'debit',amount:Math.abs(n),currency:u.currency||'USD',description:desc||'Admin adjustment',date:new Date().toISOString(),status:'successful'});
+      _db.ref(DB.users+'/'+uid).update({balance:newBal,history:hist}).then(function(){
+        _notify(uid,(n>0?'\u2705':'\uD83D\uDCB8')+' '+desc+'. New balance: '+(parseFloat(newBal)||0).toFixed(2));
+        _toast('Balance updated to '+newBal.toFixed(2),'s');
+      });
+    });
+  }
 
   // Force refresh a single user's app
   function forceRefreshUser(uid,name){
@@ -863,6 +887,7 @@ var ADM=(function(){
     setDemoLock,removeDemoLock,enableRealLockPage,disableRealLockPage,adjustBalance,
     grantBeta,revokeBeta,betaLookup,grantBetaAll,
     copyReferLink,createSubAdmin,deleteSubAdmin,
+    filterDeposits,filterWithdrawals,
     forceRefreshAllUsers,forceRefreshUser,
     toggleAutoBeta,toggleAutoBetaFromUsers,
     toggleDark:function(){
