@@ -713,7 +713,7 @@ var ADM=(function(){
   function _renderUserBody(u,body){
     _db.ref(DB.admins+'/'+u.uid+'/betaAccess').once('value',function(bSnap){
       var hasBeta=bSnap.val()===true;
-      body.innerHTML=_dr('Email',_esc(u.email))+_dr('Balance','<span class="hi-g">'+_sym(u.currency)+(parseFloat(u.balance)||0).toFixed(2)+'</span>')+_dr('Account #','<span style="font-family:var(--mono);">'+_esc(u.accountNumber||'\u2014')+'</span>')+_dr('Country',_esc(u.country||'\u2014'))+_dr('Cards',String((u.linkedCards||[]).filter(Boolean).length))+_dr('KYC Status',_esc(u.kycStatus||'pending'))+_dr('Beta Access','<span style="color:'+(hasBeta?'var(--ok)':'var(--t3)')+';">'+(hasBeta?'\u2705 Granted':'\u2014')+'</span>')+_dr('Demo Lock','<span style="color:'+(u.demoLocked?'var(--er)':'var(--t3)')+';">'+(u.demoLocked?'\uD83D\uDD12 Restricted':'\u2014')+'</span>')+_dr('Referral Code','<span class="hi-b">'+(u.referralCode||'\u2014')+'</span>')+'<div class="sub-title">Messages</div><div id="msgs-'+u.uid+'"><div style="font-size:12px;color:var(--t2);">Loading\u2026</div></div><div class="sub-title">Actions</div><div class="card-actions"><input type="text" class="pin-in" id="pin-'+u.uid+'" placeholder="PIN" maxlength="4" inputmode="numeric"><button class="bn g" onclick="ADM.setPin(\''+u.uid+'\')">Set PIN</button><button class="bn b" onclick="ADM.msgUser(\''+u.uid+'\')">&#128232; Msg</button>'+(hasBeta?'<button class="bn r" id="beta-btn-'+u.uid+'" onclick="ADM.revokeBeta(\''+u.uid+'\')">&#128273; Revoke Access</button>':'<button class="bn g" id="beta-btn-'+u.uid+'" onclick="ADM.grantBeta(\''+u.uid+'\',\''+_esc(u.email)+'\')">&#128273; Grant Access</button>')+(u.demoLocked?'<button class="bn g" id="dl-btn-'+u.uid+'" onclick="ADM.removeDemoLock(\''+u.uid+'\')">&#128275; Remove Lock</button>':'<button class="bn w" id="dl-btn-'+u.uid+'" onclick="ADM.setDemoLock(\''+u.uid+'\')">&#128274; Restrict</button>')+(u.realLockPage?'<button class="bn r" id="rlp-btn-'+u.uid+'" onclick="ADM.disableRealLockPage(\''+u.uid+'\')">&#128275; Disable Real Lock</button>':'<button class="bn w" id="rlp-btn-'+u.uid+'" onclick="ADM.enableRealLockPage(\''+u.uid+'\')">&#128274; Enable Real Lock</button>')+'<button class="bn b" onclick="ADM.adjustBalance(\''+u.uid+'\')">&#128176; Adjust Balance</button><button class="bn w" onclick="ADM.forceRefreshUser(\''+u.uid+'\',\''+_esc((u.firstname||''))+'\')">&#8635; Refresh App</button></div>';
+      body.innerHTML=_dr('Email',_esc(u.email))+_dr('Balance','<span class="hi-g">'+_sym(u.currency)+(parseFloat(u.balance)||0).toFixed(2)+'</span>')+_dr('Account #','<span style="font-family:var(--mono);">'+_esc(u.accountNumber||'\u2014')+'</span>')+_dr('Country',_esc(u.country||'\u2014'))+_dr('Cards',String((u.linkedCards||[]).filter(Boolean).length))+_dr('KYC Status',_esc(u.kycStatus||'pending'))+_dr('Beta Access','<span style="color:'+(hasBeta?'var(--ok)':'var(--t3)')+';">'+(hasBeta?'\u2705 Granted':'\u2014')+'</span>')+_dr('Demo Lock','<span style="color:'+(u.demoLocked?'var(--er)':'var(--t3)')+';">'+(u.demoLocked?'\uD83D\uDD12 Restricted':'\u2014')+'</span>')+_dr('Minimal Ban','<span style="color:'+(u.minimalBan&&u.minimalBan.active?'var(--warn)':'var(--t3)')+';font-weight:600;">'+(u.minimalBan&&u.minimalBan.active?'\u26A0\uFE0F '+_esc(u.minimalBan.reason||'Active'):'\u2014')+'</span>')+_dr('Referral Code','<span class="hi-b">'+(u.referralCode||'\u2014')+'</span>')+'<div class="sub-title">Messages</div><div id="msgs-'+u.uid+'"><div style="font-size:12px;color:var(--t2);">Loading\u2026</div></div><div class="sub-title">Actions</div><div class="card-actions"><input type="text" class="pin-in" id="pin-'+u.uid+'" placeholder="PIN" maxlength="4" inputmode="numeric"><button class="bn g" onclick="ADM.setPin(\''+u.uid+'\')">Set PIN</button><button class="bn b" onclick="ADM.msgUser(\''+u.uid+'\')">&#128232; Msg</button>'+(hasBeta?'<button class="bn r" id="beta-btn-'+u.uid+'" onclick="ADM.revokeBeta(\''+u.uid+'\')">&#128273; Revoke Access</button>':'<button class="bn g" id="beta-btn-'+u.uid+'" onclick="ADM.grantBeta(\''+u.uid+'\',\''+_esc(u.email)+'\')">&#128273; Grant Access</button>')+(u.demoLocked?'<button class="bn g" id="dl-btn-'+u.uid+'" onclick="ADM.removeDemoLock(\''+u.uid+'\')">&#128275; Remove Lock</button>':'<button class="bn w" id="dl-btn-'+u.uid+'" onclick="ADM.setDemoLock(\''+u.uid+'\')">&#128274; Restrict</button>')+(u.realLockPage?'<button class="bn r" id="rlp-btn-'+u.uid+'" onclick="ADM.disableRealLockPage(\''+u.uid+'\')">&#128275; Disable Real Lock</button>':'<button class="bn w" id="rlp-btn-'+u.uid+'" onclick="ADM.enableRealLockPage(\''+u.uid+'\')">&#128274; Enable Real Lock</button>')+'<button class="bn b" onclick="ADM.adjustBalance(\''+u.uid+'\')">&#128176; Adjust Balance</button>'+(u.minimalBan&&u.minimalBan.active?'<button class="bn g" onclick="ADM.removeMinimalBan(\''+u.uid+'\')" style="background:#166534;">&#9888; Remove Ban</button>':'<button class="bn r" onclick="ADM.setMinimalBan(\''+u.uid+'\')" style="background:#7c2d12;">&#9888; Min Ban</button>')+'<button class="bn w" onclick="ADM.forceRefreshUser(\''+u.uid+'\',\''+_esc((u.firstname||''))+'\')">&#8635; Refresh App</button></div>';
       _loadUserMsgs(u.uid);
     });
   }
@@ -798,6 +798,27 @@ var ADM=(function(){
   // ── PUSH ─────────────────────────────────────────────────────
   var _pushSub=null;
   function _initPush(){if(!('Notification' in window)||!('serviceWorker' in navigator))return;_checkNotifUI();if(Notification.permission==='granted'){_subscribePush();}else if(Notification.permission==='default'){Notification.requestPermission().then(function(p){if(p==='granted'){_subscribePush();_checkNotifUI();}});}}
+
+  function setMinimalBan(uid){
+    var reason=prompt('Ban reason (shown to user):','');
+    if(reason===null)return;
+    if(!reason.trim()){_toast('Enter a reason.','e');return;}
+    var stepsRaw=prompt('Steps for user (one per line, or leave blank):','');
+    var steps=stepsRaw?stepsRaw.split('\n').map(function(s){return s.trim();}).filter(Boolean):[];
+    var featInput=prompt('Features to restrict (comma separated):\nsend, topup, withdraw, loan, card, request\n(leave blank = all)','send,topup,withdraw,loan,card,request');
+    var features=featInput?featInput.split(',').map(function(s){return s.trim();}).filter(Boolean):['send','topup','withdraw','loan','card','request'];
+    _db.ref(DB.users+'/'+uid+'/minimalBan').set({active:true,reason:reason.trim(),steps:steps,features:features,bannedAt:new Date().toISOString()}).then(function(){
+      _notify(uid,'\u26A0\uFE0F Your account has been temporarily restricted. Please check the app for details.');
+      _toast('Minimal ban applied.','s');loadUsersTab();
+    });
+  }
+  function removeMinimalBan(uid){
+    if(!confirm('Remove minimal ban from this user?'))return;
+    _db.ref(DB.users+'/'+uid+'/minimalBan').remove().then(function(){
+      _notify(uid,'\u2705 Your account restrictions have been lifted. You can now use all features.');
+      _toast('Ban removed.','s');loadUsersTab();
+    });
+  }
   function requestNotifPermission(){if(!('Notification' in window))return;Notification.requestPermission().then(function(p){var btn=$('notif-btn');if(btn)btn.style.display='none';if(p==='granted'){_subscribePush();_toast('\uD83D\uDD14 Push alerts enabled!','s');}else _toast('Notifications blocked in browser settings.','e');});}
   function _checkNotifUI(){if(!('Notification' in window))return;var btn=$('notif-btn');if(!btn)return;btn.style.display=(Notification.permission==='default')?'block':'none';}
   function _subscribePush(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.ready.then(function(reg){if(reg.pushManager){reg.pushManager.getSubscription().then(function(sub){if(sub){_savePushSub(sub);}else{var opts={userVisibleOnly:true};if(typeof VAPID_PUBLIC_KEY!=='undefined'&&VAPID_PUBLIC_KEY)opts.applicationServerKey=urlBase64ToUint8Array(VAPID_PUBLIC_KEY);reg.pushManager.subscribe(opts).then(function(newSub){_savePushSub(newSub);}).catch(function(){});}});}navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='CHECK_ALERTS')loadAllTabs();});});}
@@ -881,7 +902,7 @@ var ADM=(function(){
     approveDeposit,rejectDeposit,
     markSent,rejectWithdrawal,
     approveKyc,rejectKyc,
-    approveLock,rejectLock,
+    approveLock,rejectLock,setMinimalBan,removeMinimalBan,
     approveLoan,rejectLoan,
     setPin,msgUser,changeAllPins,filterUsers,
     setDemoLock,removeDemoLock,enableRealLockPage,disableRealLockPage,adjustBalance,
