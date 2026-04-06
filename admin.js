@@ -518,7 +518,7 @@ var ADM=(function(){
       var amt=parseFloat(req.amount),rs=_sym(req.currency);
       _db.ref(DB.users+'/'+req.uid).once('value',function(uSnap){
         var u=uSnap.val();if(!u)return;u.balance=(parseFloat(u.balance)||0)+amt;u.history=u.history||[];
-        for(var i=0;i<u.history.length;i++){if(u.history[i].requestKey===key){u.history[i].status='successful';u.history[i].completedDate=new Date().toISOString();break;}}
+        for(var i=0;i<u.history.length;i++){if(u.history[i].requestKey===key){u.history[i].status='successful';u.history[i].type='credit';u.history[i].completedDate=new Date().toISOString();break;}}
         return _db.ref(DB.users+'/'+req.uid).set(u);
       }).then(function(){return _db.ref(DB.topups+'/'+key).update({status:'approved',processedDate:new Date().toISOString()});})
       .then(function(){_notify(req.uid,'\u2705 Your deposit of '+rs+amt.toFixed(2)+' has been approved!');_toast('Deposit approved!','s');});
