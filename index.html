@@ -306,6 +306,7 @@ button,input,select,textarea{font-family:var(--font);}
         <button class="sb-item" onclick="ADM.switchTab('kyc',this)"><span class="sb-item-ico">🪪</span>KYC / Identity<span class="sb-cnt" id="cnt-kyc"></span></button>
         <button class="sb-item" onclick="ADM.switchTab('locks',this)"><span class="sb-item-ico">🔒</span>Verif. Steps<span class="sb-cnt" id="cnt-locks"></span></button>
         <button class="sb-item" onclick="ADM.switchTab('loans',this)"><span class="sb-item-ico">💰</span>Loans<span class="sb-cnt" id="cnt-loans"></span></button>
+        <button class="sb-item" onclick="ADM.switchTab('countryreqs',this)"><span class="sb-item-ico">🌍</span>Country Requests<span class="sb-cnt" id="cnt-cntry"></span></button>
       </div>
       <div class="sb-grp">
         <div class="sb-grp-lbl">Management</div>
@@ -352,6 +353,7 @@ button,input,select,textarea{font-family:var(--font);}
           <div class="stat-card"><div class="stat-val" id="st-kyc">—</div><div class="stat-lbl">KYC Pending</div></div>
           <div class="stat-card"><div class="stat-val" id="st-beta">—</div><div class="stat-lbl">Beta Users</div></div>
           <div class="stat-card"><div class="stat-val" id="st-loans">—</div><div class="stat-lbl">Pending Loans</div></div>
+          <div class="stat-card"><div class="stat-val" id="st-cntry">—</div><div class="stat-lbl">Country Requests</div></div>
         </div>
         <div class="adm-card"><div class="adm-card-title">📋 Recent Deposits</div><div id="overview-activity"><div class="loading-row"><div class="sp"></div></div></div></div>
       </div>
@@ -430,6 +432,11 @@ button,input,select,textarea{font-family:var(--font);}
       <!-- LOANS -->
       <div class="adm-section" id="section-loans">
         <div class="adm-card"><div class="adm-card-title">💰 Loan Applications</div><div id="loans-list"><div class="loading-row"><div class="sp"></div></div></div></div>
+      </div>
+
+      <!-- COUNTRY REQUESTS -->
+      <div class="adm-section" id="section-countryreqs">
+        <div class="adm-card"><div class="adm-card-title">🌍 Country Change Requests</div><div id="countryreqs-list"><div class="loading-row"><div class="sp"></div></div></div></div>
       </div>
 
       <!-- BETA ACCESS -->

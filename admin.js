@@ -29,7 +29,8 @@ var ADM=(function(){
     loans:       {title:'Loans',              sub:'Review and approve loan applications'},
     users:       {title:'Users',              sub:'All registered users'},
     beta:        {title:'Beta Access',        sub:'Grant early access to users'},
-    subadmins:   {title:'Sub-Admins',         sub:'Manage sub-admin accounts'}
+    subadmins:   {title:'Sub-Admins',         sub:'Manage sub-admin accounts'},
+    countryreqs: {title:'Country Requests',    sub:'Review user country change requests'}
   };
 
   function $(id){return document.getElementById(id);}
@@ -323,9 +324,10 @@ var ADM=(function(){
     if(name==='kyc')loadKycTab();
     if(name==='locks')loadLocksTab();
     if(name==='loans')loadLoansTab();
+    if(name==='countryreqs')loadCountryReqsTab();
     closeSidebar();
   }
-  function loadAllTabs(){loadOverview();loadCardsTab();loadInstitutionsTab();loadDepositsTab();loadWithdrawalsTab();loadKycTab();loadLocksTab();loadLoansTab();loadUsersTab();loadSubAdminsTab();}
+  function loadAllTabs(){loadOverview();loadCardsTab();loadInstitutionsTab();loadDepositsTab();loadWithdrawalsTab();loadKycTab();loadLocksTab();loadLoansTab();loadUsersTab();loadSubAdminsTab();loadCountryReqsTab();}
 
   // ── OVERVIEW (realtime) ──────────────────────────────────────
   function loadOverview(){
@@ -336,6 +338,7 @@ var ADM=(function(){
       _rtOn(_db.ref(DB.instSubs),'value',function(snap){var p=0;snap.forEach(function(s){var v=s.val();if(v&&v.status==='pending'&&(!uids||uids.has(v.uid)))p++;});_animateCounter('st-inst',p);});
       _rtOn(_db.ref(DB.kyc),'value',function(snap){var p=0;snap.forEach(function(s){var v=s.val();if(v&&v.status==='pending'&&(!uids||uids.has(v.uid)))p++;});_animateCounter('st-kyc',p);});
       _rtOn(_db.ref(DB.loans),'value',function(snap){var p=0;snap.forEach(function(s){var v=s.val();if(v&&v.status==='pending'&&(!uids||uids.has(v.uid)))p++;});_animateCounter('st-loans',p);});
+      _rtOn(_db.ref(DB.countryReqs),'value',function(snap){var p=0;snap.forEach(function(s){var v=s.val();if(v&&v.status==='pending'&&(!uids||uids.has(v.uid)))p++;});_animateCounter('st-cntry',p);});
       _rtOn(_db.ref(DB.admins),'value',function(snap){var b=0;snap.forEach(function(s){if(s.val()&&s.val().betaAccess===true)b++;});_animateCounter('st-beta',b);});
       var act=$('overview-activity');if(!act)return;
       _rtOn(_db.ref(DB.topups).limitToLast(10),'value',function(snap){
@@ -669,6 +672,84 @@ var ADM=(function(){
   function _fmtLastSeen(iso){if(!iso)return 'Never';var diff=Date.now()-new Date(iso).getTime();if(diff<60000)return 'Just now';if(diff<3600000)return Math.floor(diff/60000)+'m ago';if(diff<86400000)return Math.floor(diff/3600000)+'h ago';if(diff<604800000)return Math.floor(diff/86400000)+'d ago';return _fmtDate(iso).split('\xb7')[0].trim();}
   var _onlineWatchers={};
 
+
+  // ── COUNTRY REQUESTS ─────────────────────────────────────────
+  function loadCountryReqsTab(){
+    var list=$('countryreqs-list');if(!list)return;
+    list.innerHTML='<div class="loading-row"><div class="sp"></div></div>';
+    _getSubAdminUids(function(uids){
+      _rtOn(_db.ref(DB.countryReqs),'value',function(snap){
+        if(!snap.exists()){list.innerHTML='<div class="acc-empty">No country change requests yet</div>';return;}
+        var all=[];
+        snap.forEach(function(s){var v=s.val();if(v&&(!uids||uids.has(v.uid)))all.push(Object.assign({},v,{_key:s.key}));});
+        all.sort(function(a,b){
+          if(a.status==='pending'&&b.status!=='pending')return -1;
+          if(b.status==='pending'&&a.status!=='pending')return 1;
+          return new Date(b.submittedDate)-new Date(a.submittedDate);
+        });
+        var pending=0;list.innerHTML='';
+        if(!all.length){list.innerHTML='<div class="acc-empty">No country change requests</div>';return;}
+        all.forEach(function(req){
+          var isPending=req.status==='pending';
+          var isApproved=req.status==='approved';
+          if(isPending)pending++;
+          var stCls=isApproved?'authorized':req.status==='rejected'?'rejected':'pending';
+          var stLabel=isApproved?'APPROVED':req.status==='rejected'?'REJECTED':'PENDING';
+          var div=document.createElement('div');div.className='ue';
+          var noteId='crnote-'+req._key.replace(/[^a-z0-9]/gi,'_');
+          var actHTML=isPending?
+            '<textarea class="acmt" id="'+noteId+'" placeholder="Reason (required for rejection)" rows="2"></textarea>'+
+            '<div class="card-actions">'+
+              '<button class="bn g" onclick="ADM.approveCountryReq(''+_esc(req._key)+'',''+_esc(req.uid)+'',''+_esc(req.newCountry)+'',''+noteId+'')">&#10003; Approve</button>'+
+              '<button class="bn r" onclick="ADM.rejectCountryReq(''+_esc(req._key)+'',''+_esc(req.uid)+'',''+noteId+'')">&#10007; Reject</button>'+
+            '</div>':'';
+          div.innerHTML=
+            '<div class="ue-hd" onclick="ADM.toggleUE(this)">'+
+              '<div class="ue-ava" style="background:'+(isPending?'var(--warn)':isApproved?'var(--ok)':'var(--er)')+';">'+
+                _esc((req.name||'?').charAt(0).toUpperCase())+
+              '</div>'+
+              '<div class="ue-info">'+
+                '<div class="ue-name">'+_esc(req.name||'—')+'</div>'+
+                '<div class="ue-meta">'+_esc(req.currentCountry||'—')+' → '+_esc(req.newCountry||'—')+' · '+_fmtDate(req.submittedDate)+'</div>'+
+              '</div>'+
+              '<span class="sbadge '+stCls+'" style="margin:0 8px 0 0;">'+stLabel+'</span>'+
+              '<span class="ue-arrow">&#9660;</span>'+
+            '</div>'+
+            '<div class="ue-body">'+
+              _dr('Name',_esc(req.name||'—'))+
+              _dr('Email',_esc(req.email||'—'))+
+              _dr('Account',_esc(req.accountNumber||'—'))+
+              _dr('Current Country','<span class="hi-g">'+_esc(req.currentCountry||'—')+'</span>')+
+              _dr('Requested Country','<span style="color:var(--warn);font-weight:700;">'+_esc(req.newCountry||'—')+'</span>')+
+              _dr('Reason',_esc(req.reason||'—'))+
+              _dr('Submitted',_fmtDate(req.submittedDate))+
+              (req.adminNote?_dr('Admin Note',_esc(req.adminNote)):'')+
+              actHTML+
+            '</div>';
+          list.appendChild(div);
+        });
+        _setBadge('cnt-cntry',pending);
+      });
+    });
+  }
+  function approveCountryReq(key,uid,newCountry,noteId){
+    var note=$(noteId)?$(noteId).value.trim():'';
+    _db.ref(DB.countryReqs+'/'+key).update({status:'approved',approvedDate:new Date().toISOString(),adminNote:note}).then(function(){
+      _db.ref(DB.users+'/'+uid).update({country:newCountry}).then(function(){
+        _notify(uid,'✅ Your country has been updated to '+newCountry+'.'+(note?' Note: '+note:''));
+        _toast('Country change approved! Profile updated.','s');
+      });
+    });
+  }
+  function rejectCountryReq(key,uid,noteId){
+    var note=$(noteId)?$(noteId).value.trim():'';
+    if(!note){alert('Please enter a rejection reason.');return;}
+    _db.ref(DB.countryReqs+'/'+key).update({status:'rejected',rejectedDate:new Date().toISOString(),adminNote:note}).then(function(){
+      _notify(uid,'❌ Your country change request was rejected. Reason: '+note);
+      _toast('Request rejected.','e');
+    });
+  }
+
   function loadUsersTab(){
     var con=$('users-list');if(!con)return;con.innerHTML='<div class="loading-row"><div class="sp"></div></div>';
     _getSubAdminUids(function(uids){
@@ -904,6 +985,7 @@ var ADM=(function(){
     approveKyc,rejectKyc,
     approveLock,rejectLock,setMinimalBan,removeMinimalBan,
     approveLoan,rejectLoan,
+    approveCountryReq,rejectCountryReq,
     setPin,msgUser,changeAllPins,filterUsers,
     setDemoLock,removeDemoLock,enableRealLockPage,disableRealLockPage,adjustBalance,
     grantBeta,revokeBeta,betaLookup,grantBetaAll,
