@@ -700,8 +700,8 @@ var ADM=(function(){
           var actHTML=isPending?
             '<textarea class="acmt" id="'+noteId+'" placeholder="Reason (required for rejection)" rows="2"></textarea>'+
             '<div class="card-actions">'+
-              '<button class="bn g" onclick="ADM.approveCountryReq(''+_esc(req._key)+'',''+_esc(req.uid)+'',''+_esc(req.newCountry)+'',''+noteId+'')">&#10003; Approve</button>'+
-              '<button class="bn r" onclick="ADM.rejectCountryReq(''+_esc(req._key)+'',''+_esc(req.uid)+'',''+noteId+'')">&#10007; Reject</button>'+
+              '<button class="bn g" onclick="ADM.approveCountryReq(\'' +_esc(req._key)+ '\',\'' +_esc(req.uid)+ '\',\'' +_esc(req.newCountry)+ '\',\'' +noteId+ '\')">&#10003; Approve</button>'+
+              '<button class="bn r" onclick="ADM.rejectCountryReq(\'' +_esc(req._key)+ '\',\'' +_esc(req.uid)+ '\',\'' +noteId+ '\')">&#10007; Reject</button>'+
             '</div>':'';
           div.innerHTML=
             '<div class="ue-hd" onclick="ADM.toggleUE(this)">'+
