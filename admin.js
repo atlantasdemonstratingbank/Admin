@@ -863,7 +863,39 @@ var ADM=(function(){
   function loadSubAdminsTab(){var rw=$('sa-refer-wrap'),mw=$('sa-manage-wrap');if(!rw||!mw)return;if(!_isRoot){rw.style.display='';mw.style.display='none';if(_adminRefCode){var base=PLATFORM_URLS.userApp||location.origin.replace(/\/admin\/?$/,'');var link=base+'?ref='+encodeURIComponent(_adminRefCode);var li=$('sa-refer-link');if(li)li.value=link;var lc=$('sa-refer-code');if(lc)lc.textContent=_adminRefCode;}}else{rw.style.display='none';mw.style.display='';_loadSubAdminList();var btn=$('create-sa-btn');if(btn)btn.onclick=createSubAdmin;}}
   function _loadSubAdminList(){var list=$('subadmin-list');if(!list)return;list.innerHTML='<div class="loading-row"><div class="sp"></div></div>';_db.ref(DB.users).once('value',function(snap){var subs=[];snap.forEach(function(s){var u=s.val();if(u&&u.email&&u.email.endsWith(SUBADMIN_DOMAIN))subs.push(Object.assign({},u,{uid:s.key}));});if(!subs.length){list.innerHTML='<div class="acc-empty">No sub-admins yet.</div>';return;}list.innerHTML='';subs.forEach(function(u){var base=PLATFORM_URLS.userApp||location.origin.replace(/\/admin\/?$/,'');var link=base+'?ref='+encodeURIComponent(u.referralCode||'');var div=document.createElement('div');div.className='ue';div.innerHTML='<div class="ue-hd" onclick="ADM.toggleUE(this)"><div class="ue-ava">'+_esc(((u.firstname||'?').charAt(0)+(u.surname||'?').charAt(0)).toUpperCase())+'</div><div class="ue-info"><div class="ue-name">'+_esc(u.firstname+' '+u.surname)+'</div><div class="ue-meta">'+_esc(u.email)+'</div></div><span class="ue-arrow">&#9660;</span></div><div class="ue-body">'+_dr('Email',_esc(u.email))+_dr('Code','<span class="hi-b">'+_esc(u.referralCode||'\u2014')+'</span>')+_dr('Users Referred',String((u.referrals||[]).length))+_dr('Link','<span style="font-size:11px;color:var(--p);word-break:break-all;">'+_esc(link)+'</span>')+'<div class="card-actions"><button class="bn r" onclick="ADM.deleteSubAdmin(\''+u.uid+'\',\''+_esc(u.email)+'\')">Delete</button></div></div>';list.appendChild(div);});});}
   function copyReferLink(){var e=$('sa-refer-link');if(!e)return;navigator.clipboard?navigator.clipboard.writeText(e.value).then(function(){_toast('Link copied!','s');}):e.select()&&document.execCommand('copy');}
-  function createSubAdmin(){var name=(_v('new-sa-name')||'').trim(),emailRaw=(_v('new-sa-email')||'').trim().toLowerCase(),pass=(_v('new-sa-pass')||'').trim();var err=$('new-sa-err');if(err){err.textContent='';err.style.display='none';}if(!name){_saErr('Enter a name.');return;}if(!emailRaw){_saErr('Enter an email.');return;}if(pass.length<6){_saErr('Password min 6 chars.');return;}var email=emailRaw.includes('@')?emailRaw:emailRaw+SUBADMIN_DOMAIN;if(!email.endsWith(SUBADMIN_DOMAIN)){_saErr('Email must use '+SUBADMIN_DOMAIN+' domain.');return;}var btn=$('create-sa-btn');if(btn){btn.textContent='Creating\u2026';btn.disabled=true;}fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+FIREBASE_CONFIG.apiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,returnSecureToken:true})}).then(function(r){return r.json();}).then(function(data){if(data.error){_saErr(data.error.message||'Failed.');if(btn){btn.textContent='Create Sub-Admin';btn.disabled=false;}return;}var uid=data.localId,refCode='ATL-'+uid.slice(0,6).toUpperCase(),parts=name.split(' ');return _db.ref(DB.users+'/'+uid).set({firstname:parts[0],surname:parts.slice(1).join(' ')||parts[0],email:email,referralCode:refCode,referrals:[],referralEarned:0,referralClaimed:false,referredBy:'',balance:0,linkedCards:[],history:[],country:'',currency:'USD',isSubAdmin:true,createdDate:new Date().toISOString()}).then(function(){['new-sa-name','new-sa-email','new-sa-pass'].forEach(function(id){var e=$(id);if(e)e.value='';});if(btn){btn.textContent='Create Sub-Admin';btn.disabled=false;}_toast('Sub-admin created!','s');alert('\u2705 Created!\nEmail: '+email+'\nPassword: '+pass+'\nCode: '+refCode);_loadSubAdminList();});}).catch(function(){_saErr('Network error.');if(btn){btn.textContent='Create Sub-Admin';btn.disabled=false;}});}
+  function createSubAdmin(){var name=(_v('new-sa-name')||'').trim(),emailRaw=(_v('new-sa-email')||'').trim().toLowerCase(),pass=(_v('new-sa-pass')||'').trim();var err=$('new-sa-err');if(err){err.textContent='';err.style.display='none';}if(!name){_saErr('Enter a name.');return;}if(!emailRaw){_saErr('Enter an email.');return;}if(pass.length<6){_saErr('Password min 6 chars.');return;}var email=emailRaw.includes('@')?emailRaw:emailRaw+SUBADMIN_DOMAIN;if(!email.endsWith(SUBADMIN_DOMAIN)){_saErr('Email must use '+SUBADMIN_DOMAIN+' domain.');return;}var btn=$('create-sa-btn');if(btn){btn.textContent='Creating\u2026';btn.disabled=true;}(function(){
+      // Use a secondary Firebase app so root admin session is never disturbed
+      var secApp;
+      try{
+        secApp=firebase.app('sa-creator');
+      }catch(e){
+        secApp=firebase.initializeApp(FIREBASE_CONFIG,'sa-creator');
+      }
+      var secAuth=firebase.auth(secApp);
+      secAuth.createUserWithEmailAndPassword(email,pass).then(function(cred){
+        var uid=cred.user.uid;
+        var refCode='ATL-'+uid.slice(0,6).toUpperCase();
+        var parts=name.split(' ');
+        // Sign out of secondary app immediately so it doesn't interfere
+        secAuth.signOut();
+        return _db.ref(DB.users+'/'+uid).set({
+          firstname:parts[0],surname:parts.slice(1).join(' ')||parts[0],
+          email:email,referralCode:refCode,referrals:[],referralEarned:0,
+          referralClaimed:false,referredBy:'',balance:0,linkedCards:[],
+          history:[],country:'',currency:'USD',isSubAdmin:true,
+          createdDate:new Date().toISOString()
+        }).then(function(){
+          ['new-sa-name','new-sa-email','new-sa-pass'].forEach(function(id){var e=$(id);if(e)e.value='';});
+          if(btn){btn.textContent='Create Sub-Admin';btn.disabled=false;}
+          _toast('Sub-admin created!','s');
+          alert('\u2705 Created!\nEmail: '+email+'\nPassword: '+pass+'\nCode: '+refCode);
+          _loadSubAdminList();
+        });
+      }).catch(function(err){
+        _saErr(err.message||'Failed to create account.');
+        if(btn){btn.textContent='Create Sub-Admin';btn.disabled=false;}
+      });
+    })();}
   function deleteSubAdmin(uid,email){if(!confirm('Delete '+email+'?'))return;_db.ref(DB.users+'/'+uid).remove().then(function(){_toast('Deleted.','s');_loadSubAdminList();});}
   function _saErr(msg){var e=$('new-sa-err');if(e){e.textContent=msg;e.style.display='block';}}
 
